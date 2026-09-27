@@ -1,29 +1,4 @@
-import crypto from 'crypto'
-import { Request, Response, NextFunction } from 'express'
 import { doubleCsrf } from 'csrf-csrf'
-
-const CSRF_SESSION_COOKIE = 'csrf-session'
-
-const ensureCsrfSession = (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    if (!req.cookies[CSRF_SESSION_COOKIE]) {
-        const sessionId = crypto.randomBytes(32).toString('hex')
-
-        res.cookie(CSRF_SESSION_COOKIE, sessionId, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: false,
-            path: '/',
-        })
-
-        req.cookies[CSRF_SESSION_COOKIE] = sessionId
-    }
-
-    next()
-}
 
 const {
     generateCsrfToken,
@@ -32,10 +7,9 @@ const {
     getSecret: () =>
         process.env.CSRF_SECRET || 'csrf-secret-dev-change-me',
 
-    getSessionIdentifier: (req) =>
-        req.cookies[CSRF_SESSION_COOKIE],
+    getSessionIdentifier: () => 'weblarek-anonymous',
 
-    cookieName: 'x-csrf-token',
+    cookieName: '_csrf',
 
     cookieOptions: {
         httpOnly: true,
@@ -47,6 +21,14 @@ const {
     getCsrfTokenFromRequest: (req) =>
         req.headers['x-csrf-token'] as string,
 })
+
+const ensureCsrfSession = (
+    _req: unknown,
+    _res: unknown,
+    next: () => void
+) => {
+    next()
+}
 
 export {
     ensureCsrfSession,
