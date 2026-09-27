@@ -11,21 +11,23 @@ import movingFile from '../utils/movingFile'
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { page = 1, limit = 5 } = req.query
+        const page = Math.max(1, Number(req.query.page) || 1)
+        const limit = Math.min(10, Math.max(1, Number(req.query.limit) || 5))
+
         const options = {
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (page - 1) * limit,
+            limit,
         }
         const products = await Product.find({}, null, options)
         const totalProducts = await Product.countDocuments({})
-        const totalPages = Math.ceil(totalProducts / Number(limit))
+        const totalPages = Math.ceil(totalProducts / limit)
         return res.send({
             items: products,
             pagination: {
                 totalProducts,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (err) {
@@ -81,7 +83,7 @@ const updateProduct = async (
 ) => {
     try {
         const { productId } = req.params
-        const { image } = req.body
+        const { title, description, category, price, image } = req.body
 
         // Переносим картинку из временной папки
         if (image) {
@@ -96,9 +98,11 @@ const updateProduct = async (
             productId,
             {
                 $set: {
-                    ...req.body,
-                    price: req.body.price ? req.body.price : null,
-                    image: req.body.image ? req.body.image : undefined,
+                    ...(title !== undefined && { title }),
+                    ...(description !== undefined && { description }),
+                    ...(category !== undefined && { category }),
+                    ...(price !== undefined && { price }),
+                    ...(image !== undefined && { image }),
                 },
             },
             { runValidators: true, new: true }
