@@ -1,50 +1,65 @@
-import { ordersActions, ordersSelector } from '@slices/orders'
 import { useActionCreators, useDispatch, useSelector } from '@store/hooks'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { fetchOrdersWithFilters } from '../../services/slice/orders/thunk'
+import {
+    customersActions,
+    customersSelector,
+} from '../../services/slice/customers'
+import { fetchCustomersWithFilters } from '../../services/slice/customers/thunk'
 import { AppRoute } from '../../utils/constants'
 import Filter from '../filter'
 import styles from './admin.module.scss'
-import { ordersFilterFields } from './helpers/ordersFilterFields'
+import { customersFilterFields } from './helpers/customersFilterFields'
 
-export default function AdminFilterOrders() {
+export default function AdminFilterCustomers() {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const [_, setSearchParams] = useSearchParams()
+    const { updateFilter, clearFilters } = useActionCreators(customersActions)
+    const filterCustomersOption = useSelector(
+        customersSelector.selectFilterOption
+    )
 
-    const { updateFilter, clearFilters } = useActionCreators(ordersActions)
-    const filterOrderOption = useSelector(ordersSelector.selectFilterOption)
+    const handleFilter = (
+        filters: Record<
+            string,
+            string | number | { value: string } | null | undefined
+        >
+    ) => {
+        dispatch(updateFilter({ ...filters }))
 
-    const handleFilter = (filters: Record<string, any>) => {
-        dispatch(updateFilter({ ...filters, status: filters.status.value }))
         const queryParams: { [key: string]: string } = {}
+
         Object.entries(filters).forEach(([key, value]) => {
             if (value) {
                 queryParams[key] =
                     typeof value === 'object' ? value.value : value.toString()
             }
         })
+
         setSearchParams(queryParams)
+
         navigate(
-            `${AppRoute.AdminOrders}?${new URLSearchParams(queryParams).toString()}`
+            `${AppRoute.AdminCustomers}?${new URLSearchParams(
+                queryParams
+            ).toString()}`
         )
     }
 
     const handleClearFilters = () => {
         dispatch(clearFilters())
         setSearchParams({})
-        dispatch(fetchOrdersWithFilters({}))
-        navigate(AppRoute.AdminOrders)
+        dispatch(fetchCustomersWithFilters({}))
+        navigate(AppRoute.AdminCustomers)
     }
 
     return (
         <>
             <h2 className={styles.admin__title}>Фильтры</h2>
             <Filter
-                fields={ordersFilterFields}
+                fields={customersFilterFields}
                 onFilter={handleFilter}
+                defaultValue={filterCustomersOption}
                 onClear={handleClearFilters}
-                defaultValue={filterOrderOption}
             />
         </>
     )
